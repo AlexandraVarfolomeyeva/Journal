@@ -1,37 +1,28 @@
 package com.example.journal;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.content.Intent;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
     ListView subjectsList;
     TextView header;
+    //database sqlite
     DatabaseHelper databaseHelper;
     SQLiteDatabase db;
     Cursor userCursor;
     SimpleCursorAdapter userAdapter;
-    Button basket;
-    ProgressBar prgLoading;
-    EditText edtKeyword;
-    ImageButton btnSearch;
-    TextView txtAlert;
-    String Keyword;
 
-    Button goToBasketBtn;
-    private EditText mMessageEditText;
     public static final String EXTRA_MESSAGE =
             "com.example.android.BookShop.extra.MESSAGE";
 
@@ -39,31 +30,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-/*
-        goToBasketBtn = (Button) findViewById(R.id.goToBasketBtn);
-        //  goToBasketBtn.setOnClickListener(this);
-        goToBasketBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String message = mMessageEditText.getText().toString();
-                // TODO Call second activity
-                Intent intent = new Intent(MainActivity.this, AuthorizationActivity.class);
-                intent.putExtra(EXTRA_MESSAGE, message);
-                startActivity(intent);
-            }
-        });
-
-        mMessageEditText = findViewById(R.id.editText_main);
-*/
 
 
+        FloatingActionButton AddSubjectBtn = findViewById(R.id.addsubjectbtn);
         header = (TextView)findViewById(R.id.header);
         subjectsList = (ListView)findViewById(R.id.list);
+
+
         subjectsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getApplicationContext(), LessonActivity.class);
                 intent.putExtra("id", id);
+                startActivity(intent);
+            }
+        });
+
+
+        AddSubjectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, AddSubjectActivity.class);
                 startActivity(intent);
             }
         });

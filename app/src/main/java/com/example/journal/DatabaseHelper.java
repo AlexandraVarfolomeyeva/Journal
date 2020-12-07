@@ -145,13 +145,13 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
         db.execSQL("INSERT INTO "+ USER +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP + ", " + COLUMN_IDROLE + ", "
                 + COLUMN_IDUNIVERSITY + ", " + COLUMN_USERNAME +", " + COLUMN_EMAIL +", " + COLUMN_PASSWORD +") " +
-                "VALUES ('Садыков Артур Мунавирович',NULL , 1,1,'sadykov','sadykov@gapps.ispu.ru','123');");
+                "VALUES ('Садыков Артур Мунавирович',NULL , 1,1,'sadykov','sadykov@gapps.ispu.ru','123456');");
         db.execSQL("INSERT INTO "+ USER +" (" + COLUMN_FIO+ ", " + COLUMN_IDGROUP + ", " + COLUMN_IDROLE + ", "
                 + COLUMN_IDUNIVERSITY + ", " + COLUMN_USERNAME +", " + COLUMN_EMAIL +", " + COLUMN_PASSWORD +") " +
-                "VALUES ('Косяков Сергей Витальевич',NULL , 1, 1,'kosyakov','kosyakov@gapps.ispu.ru','123');");
+                "VALUES ('Косяков Сергей Витальевич',NULL , 1, 1,'kosyakov','kosyakov@gapps.ispu.ru','123456');");
         db.execSQL("INSERT INTO "+ USER +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP + ", " + COLUMN_IDROLE + ", "
                 + COLUMN_IDUNIVERSITY + ", " + COLUMN_USERNAME +", " + COLUMN_EMAIL +", " + COLUMN_PASSWORD +") " +
-                "VALUES ('Варфоломеева Александра Александровна', 1, 1 , 2,'varfolomeyeva','16490@gapps.ispu.ru','123');");
+                "VALUES ('Варфоломеева Александра Александровна', 1, 2 , 1,'varfolomeyeva','16490@gapps.ispu.ru','123456');");
 
         db.execSQL("INSERT INTO "+ SUBJECT +" (" + COLUMN_NAME+ ", " + COLUMN_IDTEACHER + ") " +
                 "VALUES ('Жизненный цикл программного обеспечения',1);");
