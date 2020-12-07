@@ -107,6 +107,19 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/email" />
+        <EditText
+            android:id="@+id/group"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginTop="8dp"
+            android:hint="@string/prompt_group"
+            android:inputType="text"
+            android:selectAllOnFocus="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/password" />
         <CheckBox
             android:id="@+id/teacher"
             android:layout_width="wrap_content"
@@ -115,7 +128,7 @@
             android:text="@string/prompt_teacher"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/password"/>
+            app:layout_constraintTop_toBottomOf="@+id/group"/>
         <Button
             android:id="@+id/registerbtn"
             android:layout_width="wrap_content"

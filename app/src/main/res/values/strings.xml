@@ -8,6 +8,7 @@
     <string name="prompt_FIO">ФИО</string>
     <string name="prompt_Group">Группа</string>
     <string name="prompt_university">Университет</string>
+    <string name="prompt_group">Группа</string>
     <string name="prompt_teacher">Преподаватель</string>
     <string name="prompt_password">Пароль</string>
     <string name="action_sign_in">Войти</string>
