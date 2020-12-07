@@ -42,6 +42,23 @@ public class LoginViewModel extends ViewModel {
         }
     }
 
+    public int getRoleId(){
+       return loginRepository.getRole();
+    }
+
+    public int getGroupId(){
+        return loginRepository.getGroup();
+    }
+
+    public int getUserId(){
+        return loginRepository.getIdUser();
+    }
+
+    public void logout(){
+        loginRepository.logout();
+    }
+
+
     public void loginDataChanged(String username, String password) {
         if (!isUserNameValid(username)) {
             loginFormState.setValue(new LoginFormState(R.string.invalid_username, null));

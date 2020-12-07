@@ -38,6 +38,15 @@ public class LoginRepository {
         user = null;
         dataSource.logout();
     }
+    public int getRole() {
+        return user.getidRole();
+    }
+    public int getGroup() {
+        return user.getidGroup();
+    }
+    public int getIdUser() {
+        return user.getUserId();
+    }
 
     private void setLoggedInUser(LoggedInUser user) {
         this.user = user;

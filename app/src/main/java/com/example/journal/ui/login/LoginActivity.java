@@ -39,6 +39,12 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
+        if (loginViewModel.getLoginResult().getValue() != null) {
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            startActivity(intent);
+            //Complete and destroy login activity once successful
+            finish();
+        }
         final Context  cx = getApplicationContext();
 
         RegisterBtn = (Button) findViewById(R.id.registerbtn);

@@ -11,7 +11,10 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProviders;
 
+import com.example.journal.ui.login.LoginViewModel;
+import com.example.journal.ui.login.LoginViewModelFactory;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
@@ -22,6 +25,11 @@ public class MainActivity extends AppCompatActivity {
     SQLiteDatabase db;
     Cursor userCursor;
     SimpleCursorAdapter userAdapter;
+    int Group, Role,UserId;
+
+    private LoginViewModel loginViewModel;
+
+
 
     public static final String EXTRA_MESSAGE =
             "com.example.android.BookShop.extra.MESSAGE";
@@ -32,6 +40,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
+        loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
+                .get(LoginViewModel.class);
+
+        Role = loginViewModel.getRoleId();
+        Group = loginViewModel.getGroupId();
+        UserId= loginViewModel.getUserId();
         FloatingActionButton AddSubjectBtn = findViewById(R.id.addsubjectbtn);
         header = (TextView)findViewById(R.id.header);
         subjectsList = (ListView)findViewById(R.id.list);
@@ -46,7 +60,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
+        if (Role!=1){
+            AddSubjectBtn.setVisibility(View.GONE);
+        }
         AddSubjectBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -64,11 +80,19 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         // открываем подключение
         db = databaseHelper.getReadableDatabase();
-
-        //получаем данные из бд в виде курсора
-        userCursor =  db.rawQuery("select * from "+ DatabaseHelper.USER
-                + " inner join "+ DatabaseHelper.SUBJECT+
-                               " on "+DatabaseHelper.USER+"."+DatabaseHelper.COLUMN_ID+"="+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER, null);
+        if (Group == -1) {
+            //получаем данные из бд в виде курсора
+            userCursor = db.rawQuery("select * from " + DatabaseHelper.USER+ " inner join " + DatabaseHelper.SUBJECT +
+                    " on " + DatabaseHelper.USER + "." + DatabaseHelper.COLUMN_ID + "=" + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER +
+                    " where "+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER+"="+UserId, null);
+        } else {
+            userCursor = db.rawQuery("select * from " + DatabaseHelper.GRSUB
+                    + " inner join " + DatabaseHelper.SUBJECT +
+                    " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
+                    " inner join " + DatabaseHelper.USER +
+                    " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
+                    " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
+        }
         //
         // определяем, какие столбцы из курсора будут выводиться в ListView
         String[] headers = new String[] {DatabaseHelper.COLUMN_NAME, DatabaseHelper.COLUMN_FIO};
@@ -84,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         // Закрываем подключение и курсор
         db.close();
+        loginViewModel.logout();
         userCursor.close();
     }
 }

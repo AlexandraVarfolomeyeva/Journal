@@ -26,7 +26,14 @@ public class LoginDataSource {
                         userCursor.moveToFirst();
                         int id = Integer.parseInt(userCursor.getString(0));
                         String FIO = userCursor.getString(1);
-                        int idGroup = Integer.parseInt(userCursor.getString(2));
+                        String group = userCursor.getString(2);
+                        int idGroup;
+                        if (group==null) {
+                            idGroup=-1;
+                        } else
+                        {
+                            idGroup = Integer.parseInt(userCursor.getString(2));
+                        }
                         int idRole = Integer.parseInt(userCursor.getString(3));
                         int idUni = Integer.parseInt(userCursor.getString(4));
                         String Username = userCursor.getString(5);

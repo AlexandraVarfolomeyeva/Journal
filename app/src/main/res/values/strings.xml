@@ -17,4 +17,7 @@
     <string name="invalid_password">Пароль должен быть >5 символов</string>
     <string name="login_failed">Вход не удался</string>
     <string name="action_register">Регистрация</string>
+    <string name="prompt_SubjectName">Название предмета</string>
+    <string name="addSubjectLabel">Новый предмет</string>
+    <string name="action_add">Добавить</string>
 </resources>
