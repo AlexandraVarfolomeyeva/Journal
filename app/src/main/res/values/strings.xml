@@ -23,4 +23,8 @@
     <string name="action_add">Сохранить</string>
     <string name="addStudentLabel">Студент</string>
     <string name="prompt_StudentName">ФИО</string>
+    <string name="prompt_groupNums">Группы</string>
+    <string name="ok_label">Ok</string>
+    <string name="dismiss_label">Пропустить</string>
+    <string name="clear_all_label">Очистить</string>
 </resources>
