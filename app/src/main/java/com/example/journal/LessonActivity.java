@@ -11,10 +11,12 @@ import android.widget.CalendarView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -28,12 +30,18 @@ public class LessonActivity extends AppCompatActivity {
     DatabaseHelper databaseHelper;
     SQLiteDatabase db;
     Cursor studentCursor;
+    Cursor groupsCursor;
+    Cursor lessonCursor;
     ListView studentList;
     SimpleCursorAdapter studentAdapter;
     ProgressBar loadingStudents;
-    Cursor lessonCursor;
+
+    Spinner groups;
+
+
     //SimpleCursorAdapter userAdapter;
-    int subjectId=0, groupId=0, userId=0;
+    int subjectId=0, groupId=-1, userId=0;
+    boolean isTeacher = false;
     String item="";
     long lessonId=-1;
     String selectedDate;
@@ -41,18 +49,28 @@ public class LessonActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lesson);
+        databaseHelper = new DatabaseHelper(this);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             subjectId = extras.getInt("id");
             groupId = extras.getInt("groupid");
             userId = extras.getInt("userid");
         }
+        if (groupId == -1){
+            isTeacher = true;
+        }
         subject = (TextView)findViewById(R.id.subject);
         teacher = (TextView)findViewById(R.id.teacher);
-        console = (TextView)findViewById(R.id.console);
         studentList = (ListView)findViewById(R.id.studentlist);
         loadingStudents = (ProgressBar)findViewById(R.id.prgLoading);
+        groups = (Spinner)findViewById(R.id.groups);
 
+        groups.setPrompt("Группа");
 
         FloatingActionButton addStudent =  findViewById(R.id.addstudentbtn);
         addStudent.setOnClickListener(new View.OnClickListener() {
@@ -67,8 +85,23 @@ public class LessonActivity extends AppCompatActivity {
             }
         });
 
-        databaseHelper = new DatabaseHelper(this);
 
+            groups.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    groupsCursor.moveToPosition(position);
+
+                    String f = groupsCursor.getString(1);
+                    //Toast.makeText(getApplicationContext(), f, Toast.LENGTH_LONG).show();
+                    groupId = getGroupId(f);
+
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                }
+            });
 
         studentList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -133,6 +166,35 @@ public class LessonActivity extends AppCompatActivity {
         });
     }
 
+    private int getGroupId(String name){
+        Cursor groupCurs =  db.rawQuery("select * from "+ DatabaseHelper.GROUP+ " where " +DatabaseHelper.COLUMN_NAME+"='"+name+"'", null);
+        groupCurs.moveToFirst();
+        int id = Integer.parseInt(groupCurs.getString(0));
+        if (id>0)
+            return id;
+        else return 0;
+    }
+
+    private void setgroups(){
+
+        groupsCursor =  db.rawQuery("select "+  DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_ID +","+DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_NAME
+                       +" from "+ DatabaseHelper.GROUP+ " inner join " +DatabaseHelper.GRSUB+" on "+
+               DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.GRSUB +"."+DatabaseHelper.COLUMN_IDGROUP +
+               " inner join " +DatabaseHelper.SUBJECT +" on "+
+               DatabaseHelper.SUBJECT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.GRSUB +"."+DatabaseHelper.COLUMN_IDSUBJECT +
+               " where " +DatabaseHelper.SUBJECT +"."+DatabaseHelper.COLUMN_ID + " =" +subjectId , null);
+        if (groupsCursor.getCount()>0) {
+            String[] headers = new String[] {DatabaseHelper.COLUMN_NAME};
+            SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, groupsCursor, headers, new int[]{android.R.id.text1});
+            mAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            groups.setVisibility(View.VISIBLE);
+            groups.setAdapter(mAdapter);
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "Возникла ошибка!", Toast.LENGTH_LONG).show();
+            groups.setVisibility(View.GONE);
+        }
+    }
 
 
     public void getlesson(String selectedDate){
@@ -212,6 +274,7 @@ public class LessonActivity extends AppCompatActivity {
      if  (lessonCursor.getCount()>0)  {
          subject.setText(lessonCursor.getString(0));
          teacher.setText(lessonCursor.getString(1));
+         getSupportActionBar().setTitle(lessonCursor.getString(0));
      }
         lessonCursor.close();
         Date currentTime = Calendar.getInstance().getTime();
@@ -219,6 +282,14 @@ public class LessonActivity extends AppCompatActivity {
         int date = currentTime.getDate();
         int year = currentTime.getYear();
         selectedDate = new StringBuilder().append(month+1).append("/").append(date).append("/").append(year).toString();
+
+        if (isTeacher)
+        {
+            setgroups();
+        } else {
+            groups.setVisibility(View.GONE);
+        }
+
       //  getlesson(selectedDate);
         //Date date = new Date();
        // db.delete(DatabaseHelper.LESSON, null, null);
