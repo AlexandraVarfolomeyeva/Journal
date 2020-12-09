@@ -54,19 +54,30 @@ public class MainActivity extends AppCompatActivity {
         subjectsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-               Cursor subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID
-                        +" from " + DatabaseHelper.GRSUB
-                        + " inner join " + DatabaseHelper.SUBJECT +
-                        " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
-                        " inner join " + DatabaseHelper.USER +
-                        " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
-                        " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
-                subjectCursor.moveToPosition((int)id-1);
-                Intent intent = new Intent(getApplicationContext(), LessonActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+
+
+               Cursor subjectCursor;
+                if (Group == -1) {
+                    //получаем данные из бд в виде курсора
+                    subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID+" from " + DatabaseHelper.USER+ " inner join " + DatabaseHelper.SUBJECT +
+                            " on " + DatabaseHelper.USER + "." + DatabaseHelper.COLUMN_ID + "=" + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER +
+                            " where "+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER+"="+UserId, null);
+                } else {
+                    subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID+" from " + DatabaseHelper.GRSUB
+                            + " inner join " + DatabaseHelper.SUBJECT +
+                            " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
+                            " inner join " + DatabaseHelper.USER +
+                            " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
+                            " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
+                }
+                subjectCursor.moveToPosition(position);
+                int c = subjectCursor.getCount();
                 int subjectId = Integer.parseInt(subjectCursor.getString(0));
-                intent.putExtra("id", subjectId);
                 subjectCursor.close();
+
+                Intent intent = new Intent(MainActivity.this, LessonActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP);
+                intent.putExtra("id", subjectId);
                 intent.putExtra("groupid", Group);
                 intent.putExtra("userid", UserId);
                 startActivity(intent);
@@ -122,6 +133,6 @@ public class MainActivity extends AppCompatActivity {
         // Закрываем подключение и курсор
         db.close();
         loginViewModel.logout();
-        userCursor.close();
+        if (userCursor != null) {userCursor.close();}
     }
 }
