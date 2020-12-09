@@ -28,6 +28,9 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     public static final String COLUMN_PASSWORD = "password";
     //Roles
     public static final String COLUMN_NAME = "name";
+    //Student
+
+    public static final String COLUMN_ISDELETED = "isdeleted";
     //stless
     public static final String COLUMN_PRESENCE = "presence";
     public static final String COLUMN_MARK = "mark";
@@ -70,6 +73,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         db.execSQL("CREATE TABLE "+STUDENT +" (" +
                 COLUMN_ID+ " INTEGER PRIMARY KEY AUTOINCREMENT," +
                 COLUMN_FIO+ " TEXT NOT NULL, "+
+                COLUMN_ISDELETED +" INTEGER NOT NULL,"+
                 COLUMN_IDGROUP +" INTEGER NOT NULL,"+
                 " FOREIGN KEY ("+ COLUMN_IDGROUP +")" +
                 " REFERENCES "+ GROUP +" ("+COLUMN_ID + "));");
@@ -101,7 +105,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         db.execSQL("CREATE TABLE "+LESSON+" (" +
                 COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
                 COLUMN_IDSUBJECT + " INTEGER NOT NULL, "+
-                COLUMN_DATE +" DATE NOT NULL, " +
+                COLUMN_DATE +" TEXT NOT NULL, " +
 
                 " FOREIGN KEY ("+COLUMN_IDSUBJECT +")" +
                 " REFERENCES "+ SUBJECT +" ("+COLUMN_ID + "));");
@@ -160,14 +164,14 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         db.execSQL("INSERT INTO "+ SUBJECT +" (" + COLUMN_NAME + ", " + COLUMN_IDTEACHER + ") " +
                 "VALUES ('ГИС',2);");
 
-        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP + ") " +
-                "VALUES ('Ананьин Дмитрий',1);");
-        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP + ") " +
-                "VALUES ('Барменков Никита',1);");
-        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO+ ", " + COLUMN_IDGROUP + ") " +
-                "VALUES ('Бакшеев Алесандр',1);");
-        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO+ ", " + COLUMN_IDGROUP + ") " +
-                "VALUES ('Барышев Алексей',1);");
+        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP +", " + COLUMN_ISDELETED + ") " +
+                "VALUES ('Ананьин Дмитрий',1,0);");
+        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO + ", " + COLUMN_IDGROUP +", " + COLUMN_ISDELETED +  ") " +
+                "VALUES ('Барменков Никита',1,0);");
+        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO+ ", " + COLUMN_IDGROUP +", " + COLUMN_ISDELETED +  ") " +
+                "VALUES ('Бакшеев Алесандр',1,0);");
+        db.execSQL("INSERT INTO "+ STUDENT +" (" + COLUMN_FIO+ ", " + COLUMN_IDGROUP +", " + COLUMN_ISDELETED +  ") " +
+                "VALUES ('Барышев Алексей',1,0);");
 
         db.execSQL("INSERT INTO "+ GRSUB +" (" + COLUMN_IDGROUP+ ", " + COLUMN_IDSUBJECT + ") " +
                 "VALUES (1,1);");

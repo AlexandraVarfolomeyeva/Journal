@@ -20,5 +20,7 @@
     <string name="action_register">Регистрация</string>
     <string name="prompt_SubjectName">Название предмета</string>
     <string name="addSubjectLabel">Новый предмет</string>
-    <string name="action_add">Добавить</string>
+    <string name="action_add">Сохранить</string>
+    <string name="addStudentLabel">Студент</string>
+    <string name="prompt_StudentName">ФИО</string>
 </resources>

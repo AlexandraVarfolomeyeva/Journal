@@ -54,8 +54,21 @@ public class MainActivity extends AppCompatActivity {
         subjectsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+               Cursor subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID
+                        +" from " + DatabaseHelper.GRSUB
+                        + " inner join " + DatabaseHelper.SUBJECT +
+                        " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
+                        " inner join " + DatabaseHelper.USER +
+                        " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
+                        " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
+                subjectCursor.moveToPosition((int)id-1);
                 Intent intent = new Intent(getApplicationContext(), LessonActivity.class);
-                intent.putExtra("id", id);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                int subjectId = Integer.parseInt(subjectCursor.getString(0));
+                intent.putExtra("id", subjectId);
+                subjectCursor.close();
+                intent.putExtra("groupid", Group);
+                intent.putExtra("userid", UserId);
                 startActivity(intent);
             }
         });

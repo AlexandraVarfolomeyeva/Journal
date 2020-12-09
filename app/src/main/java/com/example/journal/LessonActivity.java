@@ -1,9 +1,9 @@
 package com.example.journal;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CalendarView;
@@ -15,7 +15,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.Date;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class LessonActivity extends AppCompatActivity {
 
@@ -29,7 +29,7 @@ public class LessonActivity extends AppCompatActivity {
     ProgressBar loadingStudents;
     Cursor lessonCursor;
     //SimpleCursorAdapter userAdapter;
-    long subjectId=0, groupId=1;
+    int subjectId=0, groupId=0, userId=0;
     String item="";
     long lessonId=-1;
     String selectedDate;
@@ -37,12 +37,29 @@ public class LessonActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lesson);
-
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            subjectId = extras.getInt("id");
+            groupId = extras.getInt("groupid");
+            userId = extras.getInt("userid");
+        }
         subject = (TextView)findViewById(R.id.subject);
         teacher = (TextView)findViewById(R.id.teacher);
         console = (TextView)findViewById(R.id.console);
         studentList = (ListView)findViewById(R.id.studentlist);
         loadingStudents = (ProgressBar)findViewById(R.id.prgLoading);
+        FloatingActionButton addStudent =  findViewById(R.id.addstudentbtn);
+        addStudent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(LessonActivity.this, AddStudent.class);
+
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                intent.putExtra("groupid", groupId);
+                intent.putExtra("userid", userId);
+                startActivity(intent);
+            }
+        });
 
         databaseHelper = new DatabaseHelper(this);
 
@@ -52,28 +69,79 @@ public class LessonActivity extends AppCompatActivity {
             @Override
             public void onSelectedDayChange(CalendarView view, int year,
                                             int month, int dayOfMonth) {
+                loadingStudents.setVisibility(View.VISIBLE);
                 int mYear = year;
                 int mMonth = month;
                 int mDay = dayOfMonth;
-                selectedDate = new StringBuilder().append(mMonth + 1)
-                        .append("-").append(mDay).append("/").append(mYear)
-                        .append(" ").toString();
-                view.setBackgroundColor(Color.parseColor("#00BCD4"));
-                Toast.makeText(getApplicationContext(), selectedDate, Toast.LENGTH_LONG).show();
+                selectedDate = new StringBuilder().append(mMonth + 1).append("/").append(mDay).append("/").append(mYear).toString();
+
+                studentCursor =  db.rawQuery("select "+ DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID
+                        +" from "+ DatabaseHelper.LESSON + " inner join " +DatabaseHelper.STLESS+" on "+
+                        DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +
+                        " inner join " +DatabaseHelper.STUDENT +" on "+
+                        DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDSTUDENT +
+                        " where " + DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_IDGROUP +"="+ groupId + " and "+
+                                DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_DATE + " ='"+ selectedDate +"'"
+                        , null);
+
+                if (studentCursor.getCount()>0)
+                {
+                    studentCursor.moveToFirst();
+                    lessonId = Integer.parseInt(studentCursor.getString(0));
+                } else{  //если на выбранный день уже есть пара, то открыть ее
+                  Toast.makeText(getApplicationContext(), selectedDate, Toast.LENGTH_LONG).show();
+                ContentValues cv = new ContentValues();
+                cv.put(DatabaseHelper.COLUMN_DATE, selectedDate);
+                cv.put(DatabaseHelper.COLUMN_IDSUBJECT,subjectId);
+                lessonId = db.insert(DatabaseHelper.LESSON, null, cv);
+                studentCursor =  db.rawQuery("select * from "+ DatabaseHelper.STUDENT +
+                        " where " + DatabaseHelper.COLUMN_IDGROUP +"="+ groupId, null);
+
+                while (studentCursor.moveToNext()) {
+                        ContentValues stless = new ContentValues();
+                        stless.put(DatabaseHelper.COLUMN_IDLESSON, lessonId);
+                        stless.put(DatabaseHelper.COLUMN_IDSTUDENT, studentCursor.getString(0));
+                        stless.put(DatabaseHelper.COLUMN_PRESENCE, true);
+                        long result = db.insert(DatabaseHelper.STLESS, null, stless);
+                        // действия
+                        }
+            }
+                getStudentCursor();
             }
         });
     }
 
+    public void getStudentCursor() {
+        studentCursor =  db.rawQuery("select * from "+
+                DatabaseHelper.STUDENT + " inner join " +DatabaseHelper.STLESS+" on "+
+                DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDSTUDENT +
+                " inner join " +DatabaseHelper.LESSON+" on "+
+                DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +
+                " where " + DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_IDGROUP +"="+ groupId +
+                " and " + DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +"="+ lessonId , null);
+
+        if (studentCursor.getCount()>0) {
+            loadingStudents.setVisibility(View.GONE);
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "Возникла ошибка!", Toast.LENGTH_LONG).show();
+            loadingStudents.setVisibility(View.GONE);
+        }
+        // определяем, какие столбцы из курсора будут выводиться в ListView
+
+
+        String[] headers = new String[] {DatabaseHelper.COLUMN_FIO, DatabaseHelper.COLUMN_PRESENCE};
+        // создаем адаптер, передаем в него курсор
+        studentAdapter = new SimpleCursorAdapter(this, android.R.layout.two_line_list_item,
+                studentCursor, headers, new int[]{android.R.id.text1, android.R.id.text2}, 0);
+        studentList.setAdapter(studentAdapter);
+    }
 
     @Override
     public void onResume() {
         super.onResume();
         // открываем подключение
         db = databaseHelper.getWritableDatabase();
-       Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-            subjectId = extras.getLong("id");
-        }
         subject.setText("ID subject: " + subjectId+"\n");
         lessonCursor =  db.rawQuery("select "+ DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_NAME +","+ DatabaseHelper.USER+"."+DatabaseHelper.COLUMN_FIO+
                 " from "+ DatabaseHelper.SUBJECT +" inner join " +DatabaseHelper.USER +
@@ -85,47 +153,13 @@ public class LessonActivity extends AppCompatActivity {
          teacher.setText(lessonCursor.getString(1));
      }
         lessonCursor.close();
-        Date date = new Date();
-        ContentValues cv = new ContentValues();
+        //Date date = new Date();
+       // db.delete(DatabaseHelper.LESSON, null, null);
+        //db.delete(DatabaseHelper.STLESS, null, null);
 
-        db.delete(DatabaseHelper.LESSON, null, null);
-        db.delete(DatabaseHelper.STLESS, null, null);
-
-        cv.put(DatabaseHelper.COLUMN_DATE, date.toString());
-        cv.put(DatabaseHelper.COLUMN_IDSUBJECT,subjectId);
-        //lessonId = db.insert(DatabaseHelper.LESSON, null, cv);
-        if (lessonId>0){
-            console.append("Console: result: "+ lessonId+"\n date:" + date.toString());
-            // действия
-        }
         //получаем данные из бд в виде курсора
-        studentCursor =  db.rawQuery("select * from "+ DatabaseHelper.STUDENT + " where " + DatabaseHelper.COLUMN_IDGROUP +"="+ groupId, null);
-
-        if (studentCursor.getCount()>0) {
-            loadingStudents.setVisibility(View.GONE);
-        }
-        else {
-            Toast.makeText(getApplicationContext(), "Возникла ошибка!", Toast.LENGTH_LONG).show();
-            loadingStudents.setVisibility(View.GONE);
-        }
-        // определяем, какие столбцы из курсора будут выводиться в ListView
-     /*   while (studentCursor.moveToNext()) {
-            ContentValues stless = new ContentValues();
-            stless.put(DatabaseHelper.COLUMN_IDLESSON, lessonId);
-            stless.put(DatabaseHelper.COLUMN_IDSTUDENT, studentCursor.getString(0));
-            stless.put(DatabaseHelper.COLUMN_PRESENCE, true);
-            long result = db.insert(DatabaseHelper.STLESS, null, stless);
-            console.append("Console: result stless: "+ result);
-            // действия
-        }*/
-
-        String[] headers = new String[] {DatabaseHelper.COLUMN_FIO, DatabaseHelper.COLUMN_IDGROUP};
-        // создаем адаптер, передаем в него курсор
-        studentAdapter = new SimpleCursorAdapter(this, android.R.layout.two_line_list_item,
-                studentCursor, headers, new int[]{android.R.id.text1, android.R.id.text2}, 0);
-        studentList.setAdapter(studentAdapter);
-
     }
+
     @Override
     public void onDestroy(){
         super.onDestroy();
