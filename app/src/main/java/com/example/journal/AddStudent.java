@@ -3,7 +3,6 @@ package com.example.journal;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -19,21 +18,19 @@ public class AddStudent extends AppCompatActivity {
   //  Button delButton;
     Button saveButton;
 
-    DatabaseHelper sqlHelper;
-    SQLiteDatabase db;
+    Repository repository;
     Cursor userCursor;
-    long Id=0, groupId=0, userId=0;
+    int Id=0, groupId=0;
+            long userId=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_student);
 
         nameBox = (EditText) findViewById(R.id.SubjectName);
-
         saveButton = (Button) findViewById(R.id.addbtn);
 
-        sqlHelper = new DatabaseHelper(this);
-        db = sqlHelper.getWritableDatabase();
+        repository = new Repository(this);
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
@@ -43,8 +40,7 @@ public class AddStudent extends AppCompatActivity {
         // если 0, то добавление
         if (Id > 0) {
             // получаем элемент по id из бд
-            userCursor = db.rawQuery("select * from " + DatabaseHelper.STUDENT + " where " +
-                    DatabaseHelper.COLUMN_ID + "=?", new String[]{String.valueOf(Id)});
+            userCursor = repository.GetStudentById(Id);
             userCursor.moveToFirst();
             nameBox.setText(userCursor.getString(1));
             userCursor.close();
@@ -86,19 +82,10 @@ public class AddStudent extends AppCompatActivity {
         cv.put(DatabaseHelper.COLUMN_IDGROUP, groupId);
         cv.put(DatabaseHelper.COLUMN_ISDELETED, 0);
         if (Id > 0) {
-            db.update(DatabaseHelper.STUDENT, cv, DatabaseHelper.COLUMN_ID + "=" + String.valueOf(Id), null);
+            repository.UpdateStudent(cv,Id);
         } else {
-            long stId =db.insert(DatabaseHelper.STUDENT, null, cv);
-            Cursor lessons = db.rawQuery("select "+ DatabaseHelper.LESSON+"."+DatabaseHelper.COLUMN_ID+","+
-                            DatabaseHelper.STUDENT+"."+DatabaseHelper.COLUMN_ID +
-                    " from " + DatabaseHelper.LESSON
-                    +" inner join "+ DatabaseHelper.STLESS + " on "+
-                    DatabaseHelper.STLESS+"."+DatabaseHelper.COLUMN_IDLESSON +"="+ DatabaseHelper.LESSON+"."+DatabaseHelper.COLUMN_ID
-                    +" inner join "+ DatabaseHelper.STUDENT + " on "+
-                    DatabaseHelper.STLESS+"."+DatabaseHelper.COLUMN_IDSTUDENT +"="+ DatabaseHelper.STUDENT+"."+DatabaseHelper.COLUMN_ID
-                    +" inner join "+ DatabaseHelper.GROUP + " on "+
-                    DatabaseHelper.STUDENT+"."+DatabaseHelper.COLUMN_IDGROUP +"="+ DatabaseHelper.GROUP+"."+DatabaseHelper.COLUMN_ID
-                    + " where " + DatabaseHelper.GROUP+"."+DatabaseHelper.COLUMN_ID + "=" + groupId, null);
+            long stId =repository.CreateStudent(cv);
+            Cursor lessons = repository.getLessons(groupId);
             lessons.moveToFirst();
            if (lessons.getCount()>0) {
                int studentId=Integer.parseInt(lessons.getString(1));
@@ -110,9 +97,7 @@ public class AddStudent extends AppCompatActivity {
                     String lessonId = lessons.getString(0);
                     int lesson = Integer.parseInt(lessonId);
                     stless.put(DatabaseHelper.COLUMN_IDLESSON, lesson);
-                    long res = db.insert(DatabaseHelper.STLESS, null, stless);
-                    if (false) {
-                    }
+                    repository.CreateSTLESS(stless);
                 }
             } while (lessons.moveToNext());
             }
@@ -125,13 +110,10 @@ public class AddStudent extends AppCompatActivity {
         cv.put(DatabaseHelper.COLUMN_FIO, nameBox.getText().toString());
         cv.put(DatabaseHelper.COLUMN_IDGROUP, groupId);
         cv.put(DatabaseHelper.COLUMN_ISDELETED, 1);
-        db.update(DatabaseHelper.STUDENT, cv, DatabaseHelper.COLUMN_ID + "=" + String.valueOf(Id), null);
-
+        repository.UpdateStudent(cv,Id);
         goHome();
     }
     private void goHome(){
-        // закрываем подключение
-        db.close();
         // переход к главной activity
         Intent intent = new Intent(this, LessonActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

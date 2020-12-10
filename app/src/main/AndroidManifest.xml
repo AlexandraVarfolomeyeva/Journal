@@ -20,7 +20,6 @@
         <activity android:name=".AddSubjectActivity" />
         <activity android:name=".RegisterActivity" />
         <activity android:name=".LessonActivity" />
-        <activity android:name=".AuthorizationActivity" />
         <activity android:name=".MainActivity" />
     </application>
 

@@ -2,7 +2,6 @@ package com.example.journal;
 
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -21,16 +20,13 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 public class MainActivity extends AppCompatActivity {
     ListView subjectsList;
     TextView header;
-    //database sqlite
-    DatabaseHelper databaseHelper;
-    SQLiteDatabase db;
     Cursor userCursor;
     SimpleCursorAdapter userAdapter;
     int Group, Role,UserId;
 
     private LoginViewModel loginViewModel;
 
-
+    Repository repository;
 
     public static final String EXTRA_MESSAGE =
             "com.example.android.BookShop.extra.MESSAGE";
@@ -42,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        repository = new Repository(getApplicationContext());
 
         loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
@@ -59,25 +55,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-
-               Cursor subjectCursor;
-                if (Group == -1) {
-                    //получаем данные из бд в виде курсора
-                    subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID+" from " + DatabaseHelper.USER+ " inner join " + DatabaseHelper.SUBJECT +
-                            " on " + DatabaseHelper.USER + "." + DatabaseHelper.COLUMN_ID + "=" + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER +
-                            " where "+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER+"="+UserId, null);
-                } else {
-                    subjectCursor = db.rawQuery("select "+DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_ID+" from " + DatabaseHelper.GRSUB
-                            + " inner join " + DatabaseHelper.SUBJECT +
-                            " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
-                            " inner join " + DatabaseHelper.USER +
-                            " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
-                            " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
-                }
-                subjectCursor.moveToPosition(position);
-                int c = subjectCursor.getCount();
-                int subjectId = Integer.parseInt(subjectCursor.getString(0));
-                subjectCursor.close();
+                int subjectId=setSubjectId(position);
 
                 Intent intent = new Intent(MainActivity.this, LessonActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP);
@@ -87,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
         if (Role!=1){
             AddSubjectBtn.setVisibility(View.GONE);
         }
@@ -99,28 +76,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        databaseHelper = new DatabaseHelper(getApplicationContext());
+    }
 
+    public int setSubjectId(int position){
+        Cursor subjectCursor;
+        subjectCursor = getSubjects();
+        if (subjectCursor.getCount()>=position)
+        {subjectCursor.moveToPosition(position);
+        int subjectId = Integer.parseInt(subjectCursor.getString(0));
+        subjectCursor.close();
+        return subjectId;} else
+            {
+                return -1;
+            }
     }
 
     @Override
     public void onResume() {
         super.onResume();
         // открываем подключение
-        db = databaseHelper.getReadableDatabase();
-        if (Group == -1) {
-            //получаем данные из бд в виде курсора
-            userCursor = db.rawQuery("select * from " + DatabaseHelper.USER+ " inner join " + DatabaseHelper.SUBJECT +
-                    " on " + DatabaseHelper.USER + "." + DatabaseHelper.COLUMN_ID + "=" + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER +
-                    " where "+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER+"="+UserId, null);
-        } else {
-            userCursor = db.rawQuery("select * from " + DatabaseHelper.GRSUB
-                    + " inner join " + DatabaseHelper.SUBJECT +
-                    " on " + DatabaseHelper.GRSUB + "." + DatabaseHelper.COLUMN_IDSUBJECT + "=" + DatabaseHelper.SUBJECT + "." +DatabaseHelper.COLUMN_ID +
-                    " inner join " + DatabaseHelper.USER +
-                    " on " + DatabaseHelper.SUBJECT + "." + DatabaseHelper.COLUMN_IDTEACHER + "=" + DatabaseHelper.USER + "." +DatabaseHelper.COLUMN_ID +
-                    " where "+DatabaseHelper.GRSUB+"."+DatabaseHelper.COLUMN_IDGROUP+"="+Group, null);
-        }
+            userCursor = getSubjects();
         //
         // определяем, какие столбцы из курсора будут выводиться в ListView
         String[] headers = new String[] {DatabaseHelper.COLUMN_NAME, DatabaseHelper.COLUMN_FIO};
@@ -131,11 +106,21 @@ public class MainActivity extends AppCompatActivity {
         subjectsList.setAdapter(userAdapter);
     }
 
+    public Cursor getSubjects(){
+        Cursor result;
+        if (Group == -1) {
+            //получаем данные из бд в виде курсора
+            result = repository.getSubjectsForTeacher(UserId);
+        } else {
+            result = repository.getSubjectsForStudent(Group);
+        }
+        return result;
+    }
+
     @Override
     public void onDestroy(){
         super.onDestroy();
         // Закрываем подключение и курсор
-        db.close();
         loginViewModel.logout();
         if (userCursor != null) {userCursor.close();}
     }

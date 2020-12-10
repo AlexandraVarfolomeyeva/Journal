@@ -3,7 +3,6 @@ package com.example.journal;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -27,8 +26,7 @@ public class LessonActivity extends AppCompatActivity {
 
     TextView subject, teacher, console;
 
-    DatabaseHelper databaseHelper;
-    SQLiteDatabase db;
+    Repository repository;
     Cursor studentCursor;
     Cursor groupsCursor;
     Cursor lessonCursor;
@@ -49,8 +47,7 @@ public class LessonActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lesson);
-        databaseHelper = new DatabaseHelper(this);
-
+        repository = new Repository(this);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -106,13 +103,7 @@ public class LessonActivity extends AppCompatActivity {
         studentList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-               Cursor presenceCursor =  db.rawQuery("select "+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_ID +" from "+
-                        DatabaseHelper.STUDENT + " inner join " +DatabaseHelper.STLESS+" on "+
-                        DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDSTUDENT +
-                        " inner join " +DatabaseHelper.LESSON+" on "+
-                        DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +
-                        " where " + DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_IDGROUP +"="+ groupId +
-                        " and " + DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +"="+ lessonId , null);
+               Cursor presenceCursor = repository.getStlessForGroupOnLesson(groupId,(int)lessonId);
               int count = presenceCursor.getCount();
               presenceCursor.moveToPosition(position);
                 int SelectedStLessId = Integer.parseInt(presenceCursor.getString(0));
@@ -120,8 +111,7 @@ public class LessonActivity extends AppCompatActivity {
 
                 if (SelectedStLessId > 0) {
                     // получаем элемент по id из бд
-                    presenceCursor = db.rawQuery("select * from " + DatabaseHelper.STLESS + " where " +
-                            DatabaseHelper.COLUMN_ID + "=?", new String[]{String.valueOf(SelectedStLessId)});
+                    presenceCursor = repository.getStLessById(SelectedStLessId);
                     presenceCursor.moveToFirst();
                     ContentValues cv = new ContentValues();
                     int idlesson = Integer.parseInt(presenceCursor.getString(1));
@@ -142,7 +132,7 @@ public class LessonActivity extends AppCompatActivity {
                     cv.put(DatabaseHelper.COLUMN_IDSTUDENT, idstudent);
 
                     cv.put(DatabaseHelper.COLUMN_PRESENCE, presence);
-                    db.update(DatabaseHelper.STLESS, cv, DatabaseHelper.COLUMN_ID + "=" + SelectedStLessId, null);
+                    repository.updateStLess(cv,  SelectedStLessId);
                     getStudentCursor();
                 }
             }
@@ -167,7 +157,7 @@ public class LessonActivity extends AppCompatActivity {
     }
 
     private int getGroupId(String name){
-        Cursor groupCurs =  db.rawQuery("select * from "+ DatabaseHelper.GROUP+ " where " +DatabaseHelper.COLUMN_NAME+"='"+name+"'", null);
+        Cursor groupCurs =repository.getGroupByName(name);
         groupCurs.moveToFirst();
         int id = Integer.parseInt(groupCurs.getString(0));
         if (id>0)
@@ -177,12 +167,7 @@ public class LessonActivity extends AppCompatActivity {
 
     private void setgroups(){
 
-        groupsCursor =  db.rawQuery("select "+  DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_ID +","+DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_NAME
-                       +" from "+ DatabaseHelper.GROUP+ " inner join " +DatabaseHelper.GRSUB+" on "+
-               DatabaseHelper.GROUP +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.GRSUB +"."+DatabaseHelper.COLUMN_IDGROUP +
-               " inner join " +DatabaseHelper.SUBJECT +" on "+
-               DatabaseHelper.SUBJECT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.GRSUB +"."+DatabaseHelper.COLUMN_IDSUBJECT +
-               " where " +DatabaseHelper.SUBJECT +"."+DatabaseHelper.COLUMN_ID + " =" +subjectId , null);
+        groupsCursor = repository.getGroupsBySubject(subjectId);
         if (groupsCursor.getCount()>0) {
             String[] headers = new String[] {DatabaseHelper.COLUMN_NAME};
             SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, groupsCursor, headers, new int[]{android.R.id.text1});
@@ -198,15 +183,7 @@ public class LessonActivity extends AppCompatActivity {
 
 
     public void getlesson(String selectedDate){
-        studentCursor =  db.rawQuery("select "+ DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID
-                        +" from "+ DatabaseHelper.LESSON + " inner join " +DatabaseHelper.STLESS+" on "+
-                        DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +
-                        " inner join " +DatabaseHelper.STUDENT +" on "+
-                        DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDSTUDENT +
-                        " where " + DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_IDGROUP +"="+ groupId + " and "+
-                        DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_DATE + " ='"+ selectedDate +"'"+ " and "+
-                        DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_IDSUBJECT + " =" +subjectId
-                , null);
+        studentCursor = repository.getLessonsForSubject(groupId, subjectId, selectedDate);
 
         if (studentCursor.getCount()>0)
         {
@@ -217,16 +194,15 @@ public class LessonActivity extends AppCompatActivity {
             ContentValues cv = new ContentValues();
             cv.put(DatabaseHelper.COLUMN_DATE, selectedDate);
             cv.put(DatabaseHelper.COLUMN_IDSUBJECT,subjectId);
-            lessonId = db.insert(DatabaseHelper.LESSON, null, cv);
-            studentCursor =  db.rawQuery("select * from "+ DatabaseHelper.STUDENT +
-                    " where " + DatabaseHelper.COLUMN_IDGROUP +"="+ groupId, null);
+            lessonId =repository.CreateLesson(cv);
+            studentCursor = repository.getStudentsByGroup(groupId);
 
             while (studentCursor.moveToNext()) {
                 ContentValues stless = new ContentValues();
                 stless.put(DatabaseHelper.COLUMN_IDLESSON, lessonId);
                 stless.put(DatabaseHelper.COLUMN_IDSTUDENT, studentCursor.getString(0));
                 stless.put(DatabaseHelper.COLUMN_PRESENCE, true);
-                long result = db.insert(DatabaseHelper.STLESS, null, stless);
+                long result = repository.CreateSTLESS(stless);
                 // действия
             }
         }
@@ -235,13 +211,7 @@ public class LessonActivity extends AppCompatActivity {
 
 
     public void getStudentCursor() {
-        studentCursor =  db.rawQuery("select * from "+
-                DatabaseHelper.STUDENT + " inner join " +DatabaseHelper.STLESS+" on "+
-                DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDSTUDENT +
-                " inner join " +DatabaseHelper.LESSON+" on "+
-                DatabaseHelper.LESSON +"."+DatabaseHelper.COLUMN_ID + "="+DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +
-                " where " + DatabaseHelper.STUDENT +"."+DatabaseHelper.COLUMN_IDGROUP +"="+ groupId +
-                " and " + DatabaseHelper.STLESS +"."+DatabaseHelper.COLUMN_IDLESSON +"="+ lessonId , null);
+        studentCursor =repository.getAllStudentsOntheLesson(groupId, (int)lessonId);
 
         if (studentCursor.getCount()>0) {
             loadingStudents.setVisibility(View.GONE);
@@ -264,12 +234,8 @@ public class LessonActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         // открываем подключение
-        db = databaseHelper.getWritableDatabase();
         subject.setText("ID subject: " + subjectId+"\n");
-        lessonCursor =  db.rawQuery("select "+ DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_NAME +","+ DatabaseHelper.USER+"."+DatabaseHelper.COLUMN_FIO+
-                " from "+ DatabaseHelper.SUBJECT +" inner join " +DatabaseHelper.USER +
-                        " on "+DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_IDTEACHER+"="+DatabaseHelper.USER+"."+ DatabaseHelper.COLUMN_ID +" where " +
-                DatabaseHelper.SUBJECT+"."+DatabaseHelper.COLUMN_ID + "=?", new String[]{String.valueOf(subjectId)});
+        lessonCursor = repository.getSubject(subjectId);
         lessonCursor.moveToFirst();
      if  (lessonCursor.getCount()>0)  {
          subject.setText(lessonCursor.getString(0));
@@ -289,20 +255,12 @@ public class LessonActivity extends AppCompatActivity {
         } else {
             groups.setVisibility(View.GONE);
         }
-
-      //  getlesson(selectedDate);
-        //Date date = new Date();
-       // db.delete(DatabaseHelper.LESSON, null, null);
-        //db.delete(DatabaseHelper.STLESS, null, null);
-
-        //получаем данные из бд в виде курсора
     }
 
     @Override
     public void onDestroy(){
         super.onDestroy();
         // Закрываем подключение и курсор
-        db.close();
         if (studentCursor != null) studentCursor.close();
         if (lessonCursor!= null) lessonCursor.close();
     }

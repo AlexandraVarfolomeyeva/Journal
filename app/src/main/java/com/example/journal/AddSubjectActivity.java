@@ -2,8 +2,8 @@ package com.example.journal;
 
 import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -25,15 +25,14 @@ import java.util.ArrayList;
 public class AddSubjectActivity extends AppCompatActivity {
 
     private LoginViewModel loginViewModel;
-    DatabaseHelper databaseHelper;
-    SQLiteDatabase db;
+    Repository repository;
     String[] listItem;
     boolean[] checkedItems;
     ArrayList<Integer> mGroupItems = new ArrayList<>();
     EditText gr;
 
     private void getGroups(){
-        Cursor groupsCursor =  db.rawQuery("select * from "+ DatabaseHelper.GROUP, null);
+        Cursor groupsCursor = repository.getAllGroups();
         if (groupsCursor.getCount()>0) {
             String[] headers = new String[] {DatabaseHelper.COLUMN_NAME};
             SimpleCursorAdapter mAdapter = new SimpleCursorAdapter(this, android.R.layout.simple_spinner_item, groupsCursor, headers, new int[]{android.R.id.text1});
@@ -61,9 +60,7 @@ public class AddSubjectActivity extends AppCompatActivity {
         loginViewModel = ViewModelProviders.of(this, new LoginViewModelFactory())
                 .get(LoginViewModel.class);
         final int UserId= loginViewModel.getUserId();
-        databaseHelper = new DatabaseHelper(this);
-        db = databaseHelper.getWritableDatabase();
-
+        repository= new Repository(this);
         getGroups();
 
         checkedItems = new boolean[listItem.length];
@@ -152,31 +149,30 @@ public class AddSubjectActivity extends AppCompatActivity {
                 ContentValues cv = new ContentValues();
                 cv.put(DatabaseHelper.COLUMN_NAME, SubjectName.getText().toString());
                 cv.put(DatabaseHelper.COLUMN_IDTEACHER, UserId);
-                long subId=  db.insert(DatabaseHelper.SUBJECT, null, cv);
-
+                long subId=repository.CreateSubject(cv);
 
                 for (Integer pos:mGroupItems
                      ) {
-                    Cursor groupsCursor =  db.rawQuery("select * from "+ DatabaseHelper.GROUP, null);
+                    Cursor groupsCursor =  repository.getAllGroups();
                     if (groupsCursor.getCount()>0) {
                         groupsCursor.moveToPosition(pos);
                         ContentValues grsub = new ContentValues();
                         grsub.put(DatabaseHelper.COLUMN_IDGROUP,groupsCursor.getString(0));
                         grsub.put(DatabaseHelper.COLUMN_IDSUBJECT,subId);
-                        long result =  db.insert(DatabaseHelper.GRSUB, null, grsub);
-                        Toast.makeText(getApplicationContext(), String.valueOf(result), Toast.LENGTH_LONG).show();
+                        long result = repository.CreateGroupSubject(grsub);
+                       // Toast.makeText(getApplicationContext(), String.valueOf(result), Toast.LENGTH_LONG).show();
                     }
                 }
-
-
-
-                db.close();
-               // Intent intent = new Intent(AddSubjectActivity.this, MainActivity.class);
-               // startActivity(intent);
-                //Complete and destroy activity once successful
-                finish();
+                goHome();
             }
         });
+    }
+
+    private void goHome(){
+        // переход к главной activity
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
     }
 
 
